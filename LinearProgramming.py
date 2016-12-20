@@ -23,15 +23,15 @@ def c_t(s_i_j, v_link):
         return (-1 + (-s_i_j + 1) / (1 - v_link))
 
 # Todo c_in = c_out, v_det and v_link
-c_in = 0.3
-c_out = 0.3
+c_in = 0.01
+c_out = 0.01
 
-v_det = 0.5
-v_link = 0.5
+v_det = 0.35
+v_link = 0.35
 
 # manual input
 
-n = 6
+n = 8
 length = (3 + n) * n
 
 
@@ -78,7 +78,7 @@ for i in range(0, n):
         restrict2_left[i][n * 3 + i * n + j] = -1
         restrict2_left[i + n][n * 3 + i * n + j] = -1
 '''
-from pulp import LpProblem, LpVariable, LpInteger
+from pulp import LpProblem, LpVariable, LpInteger, LpMinimize, lpSum, LpStatus
 
 index = ' '
 
@@ -96,14 +96,24 @@ fout = LpVariable.dicts('fout', index, lowBound=0, upBound=1, cat = LpInteger)
 f = LpVariable.dicts('f',index, lowBound=0, upBound=1, cat = LpInteger)
 fij = LpVariable.dicts('fij', (index, index), lowBound=0, upBound=1, cat = LpInteger)
 
-prob += lpSum([(fin[i] * c_in + fout[i] * c_out + f[i] * c_det(s_array[i], v_det, v_link)) for i in index]) \
+prob += lpSum([(fin[i] * c_in + fout[i] * c_out + f[i] * c_det(s_array[int(i)], v_det, v_link)) for i in index]) \
  + lpSum([lpSum([fij[i][j]*c_t(s_matrix[int(i)][int(j)], v_link) for j in index]) for i in index]), 'ObjectiveFunction'
 
 for i in index:
     prob += fin[i] + f[i] <= 1, ''
     prob += fout[i] + f[i] <= 1, ''
-    prob += fin[i] + f[i] - lpSum([fij[i][j] for j in index]) == 0, ''
-    prob += fout[i] + f[i] - lpSum([fij[i][j] for j in index]) == 0, ''
+    tmp_index = list(index)
+    tmp_index.remove(i)
+    prob += fin[i] + f[i] - lpSum([fij[i][j] for j in tmp_index]) == 0, ''
+    prob += fout[i] + f[i] - lpSum([fij[j][i] for j in tmp_index]) == 0, ''
+'''
+    for j in index:
+        if i != j:
+            prob += fij[i][j] == fij[j][i], ''
+
+        else:
+            prob += fij[i][i] == 0, ''
+'''
 
 prob.writeLP("LinearProgram.lp")
 prob.solve()
@@ -122,9 +132,10 @@ G.add_nodes_from(range(0,n))
 
 for i in index:
     for j in index:
-        print fij[i][j].value()
-        if fij[i][j].value() == 1:
+        #print fij[i][j].value()
+        if (fij[i][j].value() == 1) & (i != j):
            G.add_edge(int(i), int(j))
+           print 'Edge: ' + i + ' ' + j
 
 nx.draw(G)
 plt.show()
