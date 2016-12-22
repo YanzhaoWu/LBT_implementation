@@ -31,7 +31,7 @@ v_link = 0.35
 
 # manual input
 
-n = 8
+n = 6
 length = (3 + n) * n
 
 
@@ -127,15 +127,25 @@ print fij
 
 import networkx as nx
 import matplotlib.pyplot as plt
-G = nx.Graph()
+G = nx.DiGraph()
 G.add_nodes_from(range(0,n))
+g_pos=nx.spring_layout(G)
+
+for i in index:
+    if fin[i].value() == 1: 
+        nx.draw_networkx_nodes(G, g_pos, nodelist=[int(i)], edge_color = 'g')
+    elif fout[i].value() == 1 and fin[i].value() != 1:
+        nx.draw_networkx_nodes(G, g_pos, nodelist=[int(i)], edge_color = 'y')
+    else:
+        nx.draw_networkx_nodes(G, g_pos, nodelist=[int(i)], edge_color = 'r')
+
 
 for i in index:
     for j in index:
         #print fij[i][j].value()
         if (fij[i][j].value() == 1) & (i != j):
            G.add_edge(int(i), int(j))
+           nx.draw_networkx_edges(G, g_pos, edgelist = [(int(i), int(j))], edge_color = 'b')
            print 'Edge: ' + i + ' ' + j
 
-nx.draw(G)
 plt.show()
