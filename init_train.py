@@ -147,12 +147,13 @@ import caffe
 #transformer.set_raw_scale('data', 255)  # the reference model operates on images in [0,255] range instead of [0,1]
 #transformer.set_channel_swap('data', (2,1,0))  # the reference model has channels in BGR order instead of RGB
 
-num_correct_data = 20
-num_wrong_data = 20
+num_correct_data = 100
+num_wrong_data = 100
 train_data_labels = np.zeros(num_correct_data + num_wrong_data)
 train_data_img_size = (121, 53, 10)
 train_data_img = np.zeros((num_correct_data + num_wrong_data, train_data_img_size[2], train_data_img_size[0], train_data_img_size[1]))
-
+train_data_location = np.zeros((num_correct_data + num_wrong_data, 2, 4))
+train_data_time_stamp = np.zeros((num_correct_data + num_wrong_data, 2))
 # Correct 
 counter = 0
 for img_group_index in img_group:
@@ -161,6 +162,11 @@ for img_group_index in img_group:
     for idx in range(0, len(tmp_list) - 2):
         img_1 = organized_train_data_group[img_group_index][idx]
         img_2 = organized_train_data_group[img_group_index][idx + 1]
+        train_data_location[counter, 0, ...] = coordinates['\"' + train_data_prefix + img_group_index + train_data_middle + tmp_list[idx] + train_data_suffix + '\"']
+        train_data_location[counter, 1, ...] = coordinates['\"' + train_data_prefix + img_group_index + train_data_middle + tmp_list[idx + 1] + train_data_suffix + '\"']
+        train_data_time_stamp[counter][0] = idx
+        train_data_time_stamp[counter][1] = idx + 1
+
         tmp_img = np.zeros((train_data_img_size[2], train_data_img_size[0], train_data_img_size[1]), dtype = img_1.dtype)
 #        tmp_img[0:3, ...] = cv2.resize(img_1[:, :, 0:3], (train_data_img_size[1], train_data_img_size[0]))
 #        tmp_img[5:8, ...] = cv2.resize(img_2[:, :, 0:3], (train_data_img_size[1], train_data_img_size[0]))
@@ -202,9 +208,14 @@ while counter < num_wrong_data:
         continue
     tmp_list_1 = img_group[img_group_index_array[random_1]]
     tmp_list_2 = img_group[img_group_index_array[random_2]]
-
-    img_1 = organized_train_data_group[img_group_index_array[random_1]][random.randint(0, len(tmp_list_1) - 2)]
-    img_2 = organized_train_data_group[img_group_index_array[random_2]][random.randint(0, len(tmp_list_2) - 2)]
+    random_1_index = random.randint(0, len(tmp_list_1) - 2)
+    random_2_index = random.randint(0, len(tmp_list_2) - 2)
+    img_1 = organized_train_data_group[img_group_index_array[random_1]][random_1_index]
+    img_2 = organized_train_data_group[img_group_index_array[random_2]][random_2_index]
+    train_data_location[counter + num_correct_data, 0, ...] = coordinates['\"' + train_data_prefix + img_group_index_array[random_1] + train_data_middle + img_group[img_group_index_array[random_1]][random_1_index] + train_data_suffix + '\"']
+    train_data_location[counter + num_correct_data, 1, ...] = coordinates['\"' + train_data_prefix + img_group_index_array[random_2] + train_data_middle + img_group[img_group_index_array[random_2]][random_2_index] + train_data_suffix + '\"']
+    train_data_time_stamp[counter + num_correct_data][0] = random_1_index
+    train_data_time_stamp[counter + num_correct_data][1] = random_2_index
     tmp_img = np.zeros((train_data_img_size[2], train_data_img_size[0], train_data_img_size[1]), dtype = img_1.dtype)
 #        tmp_img[0:3, ...] = cv2.resize(img_1[:, :, 0:3], (train_data_img_size[1], train_data_img_size[0]))
 #        tmp_img[5:8, ...] = cv2.resize(img_2[:, :, 0:3], (train_data_img_size[1], train_data_img_size[0]))
@@ -229,12 +240,14 @@ while counter < num_wrong_data:
     counter += 1
 
 import h5py
-def save_data_as_hdf5(hdf5_data_filename, data, label):
+def save_data_as_hdf5(hdf5_data_filename, data, label, location, time_stamp):
     '''
     HDF5 is one of the data formats Caffe accepts
     '''
     with h5py.File(hdf5_data_filename, 'w') as f:
         f['data'] = data.astype(np.float32)
         f['label'] = label.astype(np.float32)
+        f['location'] = location.astype(np.uint8)
+        f['timestamp'] = time_stamp.astype(np.uint8)
 
-save_data_as_hdf5('train_data.hdf5', train_data_img, train_data_labels)
+save_data_as_hdf5('train_data_full_.hdf5', train_data_img, train_data_labels, train_data_location, train_data_time_stamp)

@@ -6,7 +6,8 @@ Created on Sun Dec 18 22:36:04 2016
 """
 import numpy as np
 # Tracking with Linear Programming
-
+import h5py
+import cv2
 def c_det(s_i, v_det, v_link):
 # input : s_i should be normalized to {0,1}
     if (s_i < v_det):
@@ -16,30 +17,36 @@ def c_det(s_i, v_det, v_link):
         
         
 def c_t(s_i_j, v_link):
-    print s_i_j
+    #print s_i_j
     if (s_i_j < v_link):
         return (1 + (-s_i_j) / v_link)
     else:
         return (-1 + (-s_i_j + 1) / (1 - v_link))
 
 # Todo c_in = c_out, v_det and v_link
-c_in = 0.01
-c_out = 0.01
+c_in = 0.5
+c_out = 0.5
 
 v_det = 0.35
 v_link = 0.35
 
 # manual input
 
-n = 6
+
+hdf5_data_path = 'test_data_full_with_prediction_.hdf5'
+hdf5_file = h5py.File(hdf5_data_path, 'r')
+prediction = hdf5_file['label'][:]
+test_img = hdf5_file['data'][:]
+# matrix solution
+n = test_img.shape[0]
 length = (3 + n) * n
 
-
-# matrix solution
-
 s_array = np.random.randint(0,2,n)
+#s_array = np.ones(n)
 print s_array
-s_matrix = np.random.randint(0,2,(n,n))
+#raise NameError('Stop')
+s_matrix = np.random.randint(0,2,(n,n))#
+#s_matrix = np.array(prediction).reshape((n,n))
 print s_matrix
 '''
 # coefficient
@@ -87,7 +94,7 @@ for i in range(0,n):
     index += ' '
 
 index = index.split()
-print index
+#print index
 
 
 prob = LpProblem('Binary Linear Programming', LpMinimize)
@@ -106,21 +113,22 @@ for i in index:
     tmp_index.remove(i)
     prob += fin[i] + f[i] - lpSum([fij[i][j] for j in tmp_index]) == 0, ''
     prob += fout[i] + f[i] - lpSum([fij[j][i] for j in tmp_index]) == 0, ''
-'''
+
     for j in index:
+        #prob += fij[i][i] == 0, ''
         if i != j:
             prob += fij[i][j] == fij[j][i], ''
 
         else:
             prob += fij[i][i] == 0, ''
-'''
+
 
 prob.writeLP("LinearProgram.lp")
 prob.solve()
 
 print LpStatus[prob.status]
 
-print fij
+#print fij
 
 
 #   Print the trajectory
@@ -131,14 +139,6 @@ G = nx.DiGraph()
 G.add_nodes_from(range(0,n))
 g_pos=nx.spring_layout(G)
 
-for i in index:
-    if fin[i].value() == 1: 
-        nx.draw_networkx_nodes(G, g_pos, nodelist=[int(i)], edge_color = 'g')
-    elif fout[i].value() == 1 and fin[i].value() != 1:
-        nx.draw_networkx_nodes(G, g_pos, nodelist=[int(i)], edge_color = 'y')
-    else:
-        nx.draw_networkx_nodes(G, g_pos, nodelist=[int(i)], edge_color = 'r')
-
 
 for i in index:
     for j in index:
@@ -148,4 +148,19 @@ for i in index:
            nx.draw_networkx_edges(G, g_pos, edgelist = [(int(i), int(j))], edge_color = 'b')
            print 'Edge: ' + i + ' ' + j
 
+           
+for i in index:
+    if fin[i].value() == 1: 
+        nx.draw_networkx_nodes(G, g_pos, nodelist=[int(i)], edge_color = 'g', label = i)
+    elif fout[i].value() == 1 and fin[i].value() != 1:
+        nx.draw_networkx_nodes(G, g_pos, nodelist=[int(i)], edge_color = 'y', label = i)
+    else:
+        nx.draw_networkx_nodes(G, g_pos, nodelist=[int(i)], edge_color = 'r', label = i)
+print fin, fout
+nx.draw_networkx_labels(G, g_pos)
+
+contrast = np.transpose(test_img[0])
+for i in range(1, n):
+    contrast = np.hstack((contrast, np.transpose(test_img[i])))
 plt.show()
+cv2.imwrite('test.png', contrast)

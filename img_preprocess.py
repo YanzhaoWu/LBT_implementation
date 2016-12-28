@@ -60,7 +60,7 @@ if __name__ == '__main__':
     #processed_img_luv = img_luv.copy()
     #processed_img_luv[:, :, 0] = img_preprocess_pre(img_luv[:,:, 0])
     #processed_img = cv2.cvtColor(processed_img_luv, cv2.COLOR_LUV2BGR)
-    processed_img = img_preprocess(img)
+    processed_img = img_preprocess_func(img)
     res = np.hstack((img, processed_img))
     plt.imshow(res)
     
