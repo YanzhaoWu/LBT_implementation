@@ -21,7 +21,7 @@ def save_data_as_hdf5(hdf5_data_filename, data, label, location, time_stamp, sco
 
 train_data_set = ['ADL-Rundle-6', 'ADL-Rundle-8', 'ETH-Bahnhof', 'ETH-Pedcross2', 'ETH-Sunnyday', 'KITTI-13', 'KITTI-17', 'PETS09-S2L1', 'TUD-Campus', 'TUD-Stadtmitte', 'Venice-2']
 train_data_img_size = (121, 53, 10)
-train_data_generate_num_ground_truth_positive = 1000
+train_data_generate_num_ground_truth_positive = 2000
 train_data_generate_num_ground_truth_negative = 1000
 train_data_generate_num_detection_negative = 1000
 train_data_generate_num = train_data_generate_num_ground_truth_positive +\
@@ -46,5 +46,11 @@ for train_data_set_idx in range(0, train_data_set_num):
     score[counter : counter + train_data_generate_num, ...] = hdf5_file['score'][...]
     
     counter += train_data_generate_num
-    
+
+shuffle_idx = np.random.permutation(label.shape[0])
+data = data[shuffle_idx]
+label = label[shuffle_idx]
+location = location[shuffle_idx]
+timestamp = timestamp[shuffle_idx]
+score = score[shuffle_idx]	
 save_data_as_hdf5('full_train_data.hdf5', data, label, location, timestamp, score)

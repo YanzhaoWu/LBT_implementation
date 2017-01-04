@@ -14,7 +14,7 @@ from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import normalize
 
-#import caffe
+import caffe
 
 
 import numpy as np
@@ -58,10 +58,10 @@ v_link = 0.18
 
 
 
-#caffe.set_mode_cpu()
+caffe.set_mode_cpu()
 # Gradient Boost
 
-hdf5_data_path = 'D:\\Projects\\LBT_implementation\\full_train_data.hdf5' #\\train_data_backup_correct\\small_ones\\ADL-Rundle-6.hdf5'
+hdf5_data_path = 'D:\\Projects\\LBT_implementation\\train_data_backup_correct\\small_ones\\ADL-Rundle-6.hdf5'
 hdf5_file = h5py.File(hdf5_data_path, 'r')
 
 labels = hdf5_file['label'][:]
@@ -69,8 +69,8 @@ locations = hdf5_file['location'][:]
 times = hdf5_file['timestamp'][:]
 train_data_img = hdf5_file['data'][:]
 
-#net = caffe.Net('LBT_deploy.prototxt', 'lbt__iter_100.caffemodel', caffe.TEST)
-train_samples = np.zeros((labels.shape[0], 4))
+net = caffe.Net('LBT_deploy.prototxt', 'lbt__iter_45000.caffemodel', caffe.TEST)
+train_samples = np.zeros((labels.shape[0], 6))
 for i in range(0, labels.shape[0]):
     
     x0 = np.array([max(0, locations[i][0][2]) + 0.5 * max(0, locations[i][0][4]), max(0, locations[i][0][3]) + 0.5 * max(0, locations[i][0][5])]) # Center Location
@@ -85,10 +85,10 @@ for i in range(0, labels.shape[0]):
     relative_velocity = (x0 - x1) / (t1 - t0)
     train_samples[i][0:2] = relative_size_change
     train_samples[i][2:4] = relative_velocity
-#    net.blobs['data'].data[...] = train_data_img[i]
-#    tmp_out = net.forward()
-#    cnn_prediction = tmp_out['fc6'].copy()
-#    train_samples[i][4:516] = cnn_prediction
+    net.blobs['data'].data[...] = train_data_img[i]
+    tmp_out = net.forward()
+    cnn_prediction = tmp_out['result'].copy()
+    train_samples[i][4:6] = cnn_prediction
 
 train_samples[np.isfinite(train_samples) == False] = 10000
 train_samples[np.isnan(train_samples) == True] = 0  
@@ -147,11 +147,11 @@ N_FOLDS = 5
 #n_train = int(round(train_samples.shape[0] * train_prct))
 
 # define base models
-base_models = [GradientBoostingClassifier(n_estimators=10),
-               GradientBoostingClassifier(n_estimators=10),
-               GradientBoostingClassifier(n_estimators=10),
-               GradientBoostingClassifier(n_estimators=10),
-               GradientBoostingClassifier(n_estimators=10)]
+base_models = [GradientBoostingClassifier(n_estimators=1000),
+               GradientBoostingClassifier(n_estimators=1000),
+               GradientBoostingClassifier(n_estimators=1000),
+               GradientBoostingClassifier(n_estimators=1000),
+               GradientBoostingClassifier(n_estimators=1000)]
 
 # define blending model
 blending_model = LogisticRegression()
@@ -262,7 +262,7 @@ for test_data_set_idx in range(0, test_data_set_num):
                 isolated_test_data_img[counter, idx, ...] = cv2.resize(tmp_optical_flow[..., idx - tmp_img.shape[2] + 1], (test_data_img_size[1], test_data_img_size[0]))
             counter += 1
         
-        candidate_samples = np.zeros((n_test * n_test, 4), dtype = np.float32)
+        candidate_samples = np.zeros((n_test * n_test, 6), dtype = np.float32)
         
         for i in range(0, n_test):
             x0 = np.array([max(0, isolated_test_locations[i][2]) + 0.5 * max(0, isolated_test_locations[i][4]), max(0, isolated_test_locations[i][3]) + 0.5 * max(0, isolated_test_locations[i][5])]) # Center Location
@@ -277,12 +277,13 @@ for test_data_set_idx in range(0, test_data_set_num):
                 relative_velocity = (x0 - x1) / (t1 - t0)
                 candidate_samples[i * n_test + j][0:2] = relative_size_change
                 candidate_samples[i * n_test + j][2:4] = relative_velocity
-#                net.blobs['data'].data[0, 0:5, ...] = isolated_test_data_img[i]
-#                net.blobs['data'].data[0, 5:10, ...] = isolated_test_data_img[j]
-#                tmp_out = net.forward()
-#                cnn_prediction = tmp_out['fc6'].copy()
-                # print cnn_prediction
-#                candidate_samples[i * n_test + j][4:516] = cnn_prediction
+                net.blobs['data'].data[0, 0:5, ...] = isolated_test_data_img[i]
+                net.blobs['data'].data[0, 5:10, ...] = isolated_test_data_img[j]
+                tmp_out = net.forward()
+                cnn_prediction = tmp_out['result'].copy()
+                cnn_prediction.squeeze()
+                print cnn_prediction[0][0:5]
+                candidate_samples[i * n_test + j][4:6] = cnn_prediction[0]
         
         candidate_samples[np.isfinite(candidate_samples) == False] = 10000
         candidate_samples[np.isnan(candidate_samples) == True] = 0
@@ -387,10 +388,10 @@ for test_data_set_idx in range(0, test_data_set_num):
         nx.draw_networkx_labels(G, g_pos)
         plt.show()
     #result1 = np.sort(result, axis = 0)
-    a1 = result[:,::-1].T
-    a2 = np.lexsort(a1)
-    a3 = result[a2]
-    np.savetxt(test_data_set[test_data_set_idx] + 'small.txt', a3, fmt='%f')
+#    a1 = result[:,::-1].T
+#    a2 = np.lexsort(a1)
+#    a3 = result[a2]
+#    np.savetxt(test_data_set[test_data_set_idx] + 'small.txt', a3, fmt='%f')
 '''        
 n_test = test_locations.shape[0] * 2
 '''

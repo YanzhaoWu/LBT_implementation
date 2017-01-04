@@ -50,9 +50,9 @@ train_data_path = 'D:\\SharedData\\LBT_Train_Set\\2DMOT2015\\train\\'
 train_data_set = ['ADL-Rundle-6', 'ADL-Rundle-8', 'ETH-Bahnhof', 'ETH-Pedcross2', 'ETH-Sunnyday', 'KITTI-13', 'KITTI-17', 'PETS09-S2L1', 'TUD-Campus', 'TUD-Stadtmitte', 'Venice-2']
 train_data_set_num = len(train_data_set)
 
-train_data_generate_num_ground_truth_positive = 1000
-train_data_generate_num_ground_truth_negative = 1000
-train_data_generate_num_detection_negative = 1000
+train_data_generate_num_ground_truth_positive = 1500
+train_data_generate_num_ground_truth_negative = 750
+train_data_generate_num_detection_negative = 750
 train_data_generate_num = train_data_generate_num_ground_truth_positive +\
                           train_data_generate_num_ground_truth_negative +\
                           train_data_generate_num_detection_negative
@@ -126,7 +126,7 @@ for train_data_set_id in range(0, train_data_set_num):
                 tmp_img[idx, ...] = tmp_optical_flow1[..., idx - tmp_img1.shape[2] + 1]
                 #print idx, idx - tmp_img1.shape[2] + 1
             for idx in range(tmp_img1.shape[2] + tmp_optical_flow1.shape[2] - 1, tmp_img1.shape[2] + tmp_optical_flow1.shape[2] + tmp_img2.shape[2] - 1):
-                tmp_img[idx, ...] = tmp_optical_flow1[..., idx - tmp_img1.shape[2] - tmp_optical_flow1.shape[2] + 1]
+                tmp_img[idx, ...] = tmp_img2[..., idx - tmp_img1.shape[2] - tmp_img1.shape[2] + 1]
                 #print idx, idx - tmp_img1.shape[2] - tmp_optical_flow1.shape[2] + 1
             for idx in range(tmp_img1.shape[2] + tmp_optical_flow1.shape[2] + tmp_img2.shape[2] - 1, tmp_img1.shape[2] + tmp_optical_flow1.shape[2] + tmp_img2.shape[2] + tmp_optical_flow2.shape[2] - 2):
                 tmp_img[idx, ...] = tmp_optical_flow2[..., idx - tmp_img1.shape[2] - tmp_optical_flow1.shape[2] - tmp_img2.shape[2] + 2]
@@ -138,6 +138,7 @@ for train_data_set_id in range(0, train_data_set_num):
             #print counter
             ground_truth_positive -= 1
         elif (ground_truth_negative > 0) and (ground_truth_boxes[random_1][1] != ground_truth_boxes[random_2][1]) \
+            and (ground_truth_boxes[random_1][0] != ground_truth_boxes[random_2][0]) \
             and (ground_truth_boxes[random_1][0] < frame_num) \
             and (ground_truth_boxes[random_2][0] < frame_num) :
             # Negative examples
@@ -167,7 +168,7 @@ for train_data_set_id in range(0, train_data_set_num):
                 tmp_img[idx, ...] = tmp_optical_flow1[..., idx - tmp_img1.shape[2] + 1]
                 #print idx, idx - tmp_img1.shape[2] + 1
             for idx in range(tmp_img1.shape[2] + tmp_optical_flow1.shape[2] - 1, tmp_img1.shape[2] + tmp_optical_flow1.shape[2] + tmp_img2.shape[2] - 1):
-                tmp_img[idx, ...] = tmp_optical_flow1[..., idx - tmp_img1.shape[2] - tmp_optical_flow1.shape[2] + 1]
+                tmp_img[idx, ...] = tmp_img2[..., idx - tmp_img1.shape[2] - tmp_optical_flow1.shape[2] + 1]
                 #print idx, idx - tmp_img1.shape[2] - tmp_optical_flow1.shape[2] + 1
             for idx in range(tmp_img1.shape[2] + tmp_optical_flow1.shape[2] + tmp_img2.shape[2] - 1, tmp_img1.shape[2] + tmp_optical_flow1.shape[2] + tmp_img2.shape[2] + tmp_optical_flow2.shape[2] - 2):
                 tmp_img[idx, ...] = tmp_optical_flow2[..., idx - tmp_img1.shape[2] - tmp_optical_flow1.shape[2] - tmp_img2.shape[2] + 2]
@@ -189,6 +190,7 @@ for train_data_set_id in range(0, train_data_set_num):
         random_1 = np.random.randint(0, detection_boxes_num)
         random_2 = np.random.randint(0, detection_boxes_num)
         if is_the_same(detection_boxes[random_1], detection_boxes[random_2], ground_truth_boxes) \
+            or (detection_boxes[random_1][0] == detection_boxes[random_2][0]) \
             or (detection_boxes[random_1][0] >= frame_num) \
             or (detection_boxes[random_2][0] >= frame_num) :
             continue
@@ -218,7 +220,7 @@ for train_data_set_id in range(0, train_data_set_num):
             tmp_img[idx, ...] = tmp_optical_flow1[..., idx - tmp_img1.shape[2] + 1]
             #print idx, idx - tmp_img1.shape[2] + 1
         for idx in range(tmp_img1.shape[2] + tmp_optical_flow1.shape[2] - 1, tmp_img1.shape[2] + tmp_optical_flow1.shape[2] + tmp_img2.shape[2] - 1):
-            tmp_img[idx, ...] = tmp_optical_flow1[..., idx - tmp_img1.shape[2] - tmp_optical_flow1.shape[2] + 1]
+            tmp_img[idx, ...] = tmp_img2[..., idx - tmp_img1.shape[2] - tmp_optical_flow1.shape[2] + 1]
             #print idx, idx - tmp_img1.shape[2] - tmp_optical_flow1.shape[2] + 1
         for idx in range(tmp_img1.shape[2] + tmp_optical_flow1.shape[2] + tmp_img2.shape[2] - 1, tmp_img1.shape[2] + tmp_optical_flow1.shape[2] + tmp_img2.shape[2] + tmp_optical_flow2.shape[2] - 2):
             tmp_img[idx, ...] = tmp_optical_flow2[..., idx - tmp_img1.shape[2] - tmp_optical_flow1.shape[2] - tmp_img2.shape[2] + 2]
@@ -229,4 +231,12 @@ for train_data_set_id in range(0, train_data_set_num):
         #print 'negative'
         #print counter
         detection_negative -= 1
+    
+    shuffle_idx = np.random.permutation(train_data_labels.shape[0])
+    train_data_img = train_data_img[shuffle_idx]
+    train_data_labels = train_data_labels[shuffle_idx]
+    train_data_location = train_data_location[shuffle_idx]
+    train_data_time_stamp = train_data_time_stamp[shuffle_idx]
+    train_data_scores = train_data_scores[shuffle_idx]
+
     save_data_as_hdf5(train_data_set[train_data_set_id] + '.hdf5', train_data_img, train_data_labels, train_data_location, train_data_time_stamp, train_data_scores)
