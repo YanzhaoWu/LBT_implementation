@@ -1,19 +1,34 @@
 name: "LBT"
 
-input: "data"
-input_shape {
-	dim: 1
-	dim: 10
-	dim: 121
-	dim: 53
+layer {
+  name: "hdf5"
+  type: "HDF5Data"
+  top: "data"
+  top: "label"
+  include {
+    phase: TRAIN
+  }
+  hdf5_data_param {
+    source: "train_data.txt"
+	batch_size: 128
+  }
 }
 
-input: "label"
-input_shape {
-	dim: 1
+layer {
+  name: "hdf5"
+  type: "HDF5Data"
+  top: "data"
+  top: "label"
+  include {
+    phase: TEST
+  }
+  hdf5_data_param {
+    source: "test_data.txt"
+    batch_size: 1
+
+  }
 }
 
-# First layer: Should the params be set?
 layer {
   name: "conv1"
   type: "Convolution"
@@ -30,6 +45,12 @@ layer {
   convolution_param {
     num_output: 96
     kernel_size: 7
+	weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
   }
 }
 
@@ -68,6 +89,12 @@ layer {
   convolution_param {
     num_output: 256
     kernel_size: 5
+	weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
   }
 }
 
@@ -106,6 +133,12 @@ layer {
   convolution_param {
     num_output: 256
     kernel_size: 5
+	weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
   }
 }
 
@@ -143,6 +176,12 @@ layer {
   }
   inner_product_param {
     num_output: 4096
+	weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
   }
 }
 
@@ -178,6 +217,12 @@ layer {
   }
   inner_product_param {
     num_output: 1024
+	weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
   }
 }
 
@@ -213,6 +258,12 @@ layer {
   }
   inner_product_param {
     num_output: 512
+	weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
   }
 }
 
@@ -233,51 +284,12 @@ layer {
   }
 }
 
-# layer {
-  # name: "fc7"
-  # type: "InnerProduct"
-  # bottom: "fc6"
-  # top: "fc7"
-  # param {
-    # lr_mult: 1
-    # decay_mult: 1
-  # }
-  # param {
-    # lr_mult: 2
-    # decay_mult: 0
-  # }
-  # inner_product_param {
-    # num_output: 2
-  # }
-# }
-
-# layer {
-  # name: "result"
-  # type: "Softmax"
-  # top: "result"
-  # include {
-	# phase: TEST
-  # }
-  # bottom: "fc7"
-# }
-
-# layer {
-  # name: "accuracy"
-  # type: "Accuracy"
-  # bottom: "result"
-  # bottom: "label"
-  # top: "accuracy"
-  # include {
-    # phase: TEST
-  # }
-# }
-
 layer {
   name: "loss"
   type: "SoftmaxWithLoss"
   include {
      phase: TRAIN
   }
-  bottom: "fc7"
+  bottom: "fc6"
   bottom: "label"
 }

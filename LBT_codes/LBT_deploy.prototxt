@@ -8,11 +8,6 @@ input_shape {
 	dim: 53
 }
 
-input: "label"
-input_shape {
-	dim: 1
-}
-
 # First layer: Should the params be set?
 layer {
   name: "conv1"
@@ -233,51 +228,12 @@ layer {
   }
 }
 
-# layer {
-  # name: "fc7"
-  # type: "InnerProduct"
-  # bottom: "fc6"
-  # top: "fc7"
-  # param {
-    # lr_mult: 1
-    # decay_mult: 1
-  # }
-  # param {
-    # lr_mult: 2
-    # decay_mult: 0
-  # }
-  # inner_product_param {
-    # num_output: 2
-  # }
-# }
-
-# layer {
-  # name: "result"
-  # type: "Softmax"
-  # top: "result"
-  # include {
-	# phase: TEST
-  # }
-  # bottom: "fc7"
-# }
-
-# layer {
-  # name: "accuracy"
-  # type: "Accuracy"
-  # bottom: "result"
-  # bottom: "label"
-  # top: "accuracy"
-  # include {
-    # phase: TEST
-  # }
-# }
-
 layer {
   name: "loss"
   type: "SoftmaxWithLoss"
   include {
      phase: TRAIN
   }
-  bottom: "fc7"
+  bottom: "fc6"
   bottom: "label"
 }

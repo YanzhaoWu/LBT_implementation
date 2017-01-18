@@ -27,8 +27,12 @@ def get_test_locations(frame_idx, test_boxes):
 
 data_set_root = 'D:\\SharedData\\LBT_Train_Set\\2DMOT2015\\test\\'
 data_set_name = 'KITTI-16'
-test_result_boxes = np.loadtxt('KITTI-16small' + '.txt', delimiter = ',')
+test_result_boxes = np.loadtxt('result\\KITTI-16' + '.txt', delimiter = ',')
+a1 = test_result_boxes[:,::-1].T
+a2 = np.lexsort(a1)
+test_result_boxes = test_result_boxes[a2]
 test_result_boxes_num = test_result_boxes.shape[0]
+np.savetxt('test.txt', test_result_boxes, fmt='%.2f', delimiter = ',')
 frame_num = int(test_result_boxes[test_result_boxes_num - 1][0])
 
 font = cv2.FONT_HERSHEY_SIMPLEX

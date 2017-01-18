@@ -7,12 +7,11 @@ Created on Wed Dec 28 12:10:55 2016
 
 import numpy as np
 import matplotlib.pyplot as plt
-import h5py
-from sklearn.datasets import load_digits
-from stacked_generalizer import StackedGeneralizer
-from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import normalize
+#from sklearn.datasets import load_digits
+#from stacked_generalizer import StackedGeneralizer
+#from sklearn.ensemble import GradientBoostingClassifier
+#from sklearn.linear_model import LogisticRegression
+#from sklearn.preprocessing import normalize
 
 import caffe
 
@@ -52,7 +51,7 @@ def c_t(s_i_j, v_link):
 c_in = 0.2
 c_out = 0.2
 
-v_det = 0.35
+v_det = 0.2
 v_link = 0.35
 
 
@@ -61,115 +60,12 @@ v_link = 0.35
 caffe.set_mode_cpu()
 # Gradient Boost
 
-hdf5_data_path = 'full_train_data_with_cnn_predicts_512.hdf5'
-hdf5_file = h5py.File(hdf5_data_path, 'r')
-
-labels = hdf5_file['label'][:]
-#locations = hdf5_file['location'][:]
 #times = hdf5_file['timestamp'][:]
 #train_data_img = hdf5_file['data'][:]
 
 net = caffe.Net('LBT_deploy.prototxt', 'lbt__iter_45000.caffemodel', caffe.TEST)
 #train_samples = np.zeros((labels.shape[0], 6))
-train_samples = hdf5_file['cnnprediction'][:]
-'''
-for i in range(0, labels.shape[0]):
-    
-    x0 = np.array([max(0, locations[i][0][2]) + 0.5 * max(0, locations[i][0][4]), max(0, locations[i][0][3]) + 0.5 * max(0, locations[i][0][5])]) # Center Location
-    x1 = np.array([max(0, locations[i][1][2]) + 0.5 * max(0, locations[i][1][4]), max(0, locations[i][1][3]) + 0.5 * max(0, locations[i][1][5])]) # Center Location
-    s0 = np.array([max(0, locations[i][0][4]), max(0, locations[i][0][5])])
-    s1 = np.array([max(0, locations[i][1][4]), max(0, locations[i][1][5])])
-    t0 = times[i][0]
-    t1 = times[i][1]
-    #if t0 == t1:
-    #    continue
-    relative_size_change = (s0 - s1) / (s0 + s1)
-    relative_velocity = (x0 - x1) / (t1 - t0)
-    train_samples[i][0:2] = relative_size_change
-    train_samples[i][2:4] = relative_velocity
-    net.blobs['data'].data[...] = train_data_img[i]
-    tmp_out = net.forward()
-    cnn_prediction = tmp_out['result'].copy()
-    train_samples[i][4:6] = cnn_prediction
 
-train_samples[np.isfinite(train_samples) == False] = 10000
-train_samples[np.isnan(train_samples) == True] = 0  
-
-def save_data_as_hdf5_prediction(hdf5_data_filename, label, location, time_stamp, cnn_prediction):
-    # HDF5 is one of the data formats Caffe accepts
-    with h5py.File(hdf5_data_filename, 'w') as f:
-        f['data'] = data.astype(np.float32)
-        f['label'] = label.astype(np.float32)
-        f['location'] = location.astype(np.uint8)
-        f['timestamp'] = time_stamp.astype(np.uint8)
-        f['cnnprediction'] = cnn_prediction.astype(np.float32)
-
-save_data_as_hdf5_prediction('full_train_data_with_predictions.hdf5', labels, locations, times, train_samples[:, 0:516])
-'''
-#raise NameError('Hi')
-
-VERBOSE = True
-N_FOLDS = 5
-
-# load data and shuffle observations
-# data = load_digits()
-
-#X = data.data # Change to another type
-#y = data.target
-#print relative_size_change.shape
-#print relative_velocity.shape
-#print cnn_prediction.shape
-#
-##test_sample = [relative_size_change, relative_velocity, cnn_prediction]
-##train_sample = np.array(test_sample)
-#
-#test_sample = np.append(np.append(relative_size_change, relative_velocity), cnn_prediction)
-#print test_sample.shape
-
-#train_sample = np.random.randint(0, 255,(100,test_sample.shape[0]))
-
-# print test_sample.shape
-# print train_sample
-
-#X = np.random.randint(0,255, test_sample.shape)
-#y = np.random.randint(0,2, train_sample.shape[0])
-
-#print y.shape
-#print y
-
-#shuffle_idx = np.random.permutation(labels.shape[0])
-
-#train_samples = train_samples[shuffle_idx]
-#labels = labels[shuffle_idx]
-#train_data_img = train_data_img[shuffle_idx]
-#locations = locations[shuffle_idx]
-#times = times[shuffle_idx]
-
-# hold out 20 percent of data for testing accuracy
-#train_prct = 1
-#n_train = int(round(train_samples.shape[0] * train_prct))
-
-# define base models
-base_models = [#GradientBoostingClassifier(n_estimators=40),
-               GradientBoostingClassifier(n_estimators=400)]
-               #GradientBoostingClassifier(n_estimators=40),
-               #GradientBoostingClassifier(n_estimators=40),
-               #GradientBoostingClassifier(n_estimators=100)]
-
-# define blending model
-blending_model = LogisticRegression()
-
-# initialize multi-stage model
-sg = StackedGeneralizer(base_models, blending_model,
-                        n_folds=N_FOLDS, verbose=VERBOSE)
-
-# fit model
-sg.fit(train_samples, labels)
-
-pred = sg.predict(train_samples)
-pred_classes = [np.argmax(p) for p in pred]
-#
-_ = sg.evaluate(labels, pred_classes)
 
 # Generate Test Data
 print 'Finish the fitting phase'
@@ -209,7 +105,7 @@ def get_correct_object_idx(pre_frame_location, object_idx, result):
     while (i >= 0):
         #if (result[i][0] == pre_frame_location[0]) and (result[i][2] == pre_frame_location[2]) and (result[i][3] == pre_frame_location[3]) \
         #    and (result[i][2] == pre_frame_location[2]) and (result[i][3] == pre_frame_location[3]) :
-        if (int(result[i][0]) == int(pre_frame_location[0]) or ((int(result[i][0]) + 1)  == int(pre_frame_location[0])) ) and (overlap_area(pre_frame_location[2:6], result[i][2:6]) > overlap_threshold): # or (int(result[i][0]) + 2) == int(pre_frame_location[0])) and (overlap_area(pre_frame_location[2:6], result[i][2:6]) > overlap_threshold):          
+        if (int(result[i][0]) == int(pre_frame_location[0]) or (int(result[i][0]) + 1) == int(pre_frame_location[0])) and (overlap_area(pre_frame_location[2:6], result[i][2:6]) > overlap_threshold):
             return result[i][1]
         i -= 1
     return (object_idx + 1)
@@ -228,7 +124,7 @@ for test_data_set_idx in range(0, test_data_set_num):
     is_first_result = True
     result = None
     object_idx = 1
-    for frame_idx in range(1, 2):
+    for frame_idx in range(1, frame_num):
         frame_1_locations_and_scores = get_detection_locations_and_scores(frame_idx, detection_boxes)
         frame_2_locations_and_scores = get_detection_locations_and_scores(frame_idx + 1, detection_boxes)
         if frame_1_locations_and_scores == None or frame_2_locations_and_scores == None:
@@ -309,7 +205,7 @@ for test_data_set_idx in range(0, test_data_set_num):
             pred_normalize[i] = pred[i] / (pred[i][0] + pred[i][1])
         #pred_labels = pred[:, 0]
         pred_labels = pred_normalize[:, 1] # Predicted label == 1
-        s_array = isolated_test_scores / 100 #np.max(isolated_test_scores)
+        s_array = isolated_test_scores / 100
         #print s_array
         s_matrix = np.array(pred_labels).reshape((n_x, n_y))
         #print s_matrix
@@ -353,15 +249,6 @@ for test_data_set_idx in range(0, test_data_set_num):
             prob += fout[i] + f[i] - lpSum([fij[j][i] for j in index_x]) == 0, ''
             prob += fout[i] + f[i] <= 1, ''
         
-        '''
-            for j in index:
-                #prob += fij[i][i] == 0, ''
-                if i != j:
-                    prob += fij[i][j] == fij[j][i], ''
-        
-                else:
-                    prob += fij[i][i] == 0, ''
-        '''
         
         #prob.writeLP("LinearProgram.lp")
         prob.solve()
@@ -372,9 +259,9 @@ for test_data_set_idx in range(0, test_data_set_num):
         
         
         #   Print the trajectory
-        G = nx.DiGraph()
-        G.add_nodes_from(range(0,n_test))
-        g_pos=nx.spring_layout(G)
+        #G = nx.DiGraph()
+        #G.add_nodes_from(range(0,n_test))
+        #g_pos=nx.spring_layout(G)
         '''
         for i in index:
             if int(i) < n_x and fin[i].value() == 1: 
@@ -384,15 +271,13 @@ for test_data_set_idx in range(0, test_data_set_num):
             else:
                 nx.draw_networkx_nodes(G, g_pos, nodelist=[int(i)], node_color = 'r', label = i)
         '''
-        for i in index:
-            nx.draw_networkx_nodes(G, g_pos, nodelist=[int(i)], node_color = 'r', label = i)
         for i in index_x:
             for j in index_y:
                 #print fij[i][j].value()
                 if (fij[i][j].value() == 1):
-                   G.add_edge(int(i), int(j) + n_x)
-                   nx.draw_networkx_edges(G, g_pos, edgelist = [(int(i), int(j) + n_x)], edge_color = 'b')
-                   #print 'Edge: ' + i + ' ' + str(int(j) + n_y)
+                   #G.add_edge(int(i), int(j) + n_x)
+                   #nx.draw_networkx_edges(G, g_pos, edgelist = [(int(i), int(j) + n_x)], edge_color = 'b')
+                   print 'Edge: ' + i + ' ' + str(int(j) + n_y)
                    #if ((int(i) < frame_1_locations_and_scores.shape[0]) and (int(j) >= frame_1_locations_and_scores.shape[0])):
                    if is_first_result:    
                        tmp_array = np.array(frame_1_locations_and_scores[int(i)])
@@ -413,18 +298,18 @@ for test_data_set_idx in range(0, test_data_set_num):
                        tmp_array = np.array(frame_2_locations_and_scores[int(j)])
                        tmp_array[1] = tmp_object_idx
                        result = np.vstack((result, tmp_array))
-                   #print frame_1_locations_and_scores[int(i)], frame_2_locations_and_scores[int(j)]
+                   print frame_1_locations_and_scores[int(i)], frame_2_locations_and_scores[int(j)]
 
                    #if ((int(j) < frame_1_locations_and_scores.shape[0]) and (int(i) >= frame_1_locations_and_scores.shape[0])):
                    #    print frame_1_locations_and_scores[int(j)], frame_2_locations_and_scores[int(i) - frame_1_locations_and_scores.shape[0]]
         
-        nx.draw_networkx_labels(G, g_pos)
-        plt.show()
+        #nx.draw_networkx_labels(G, g_pos)
+        #plt.show()
     #result1 = np.sort(result, axis = 0)
     a1 = result[:,::-1].T
     a2 = np.lexsort(a1)
     a3 = result[a2]
-    #np.savetxt('result\\' + test_data_set[test_data_set_idx] + '.txt', a3, fmt='%.2f', delimiter=',')
+    np.savetxt(test_data_set[test_data_set_idx] + 'small.txt', a3, fmt='%f')
 '''        
 n_test = test_locations.shape[0] * 2
 '''
